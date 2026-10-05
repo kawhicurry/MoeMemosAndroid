@@ -135,10 +135,17 @@
     <string name="pinned">Fixado</string>
     <string name="add_media">Adicionar fotos ou vídeos</string>
     <string name="voice_input">Digitação por voz</string>
+    <string name="cancel_voice_input">Cancelar reconhecimento de voz</string>
     <string name="record_audio">Gravar nota de voz</string>
     <string name="stop_recording">Parar gravação</string>
     <string name="cancel_recording">Cancelar gravação</string>
     <string name="speech_recognition_unavailable">O reconhecimento de voz não está disponível neste dispositivo.</string>
+    <string name="speech_recognition_permission_required">É necessário permitir o microfone para o reconhecimento de voz.</string>
+    <string name="speech_recognition_busy">O reconhecimento de voz está ocupado. Tente novamente.</string>
+    <string name="speech_recognition_network_error">O reconhecimento de voz requer uma conexão de rede. Verifique sua conexão e tente novamente.</string>
+    <string name="speech_recognition_no_match">Nenhuma fala foi reconhecida. Tente novamente.</string>
+    <string name="speech_recognition_language_unavailable">O idioma selecionado não está disponível para reconhecimento de voz.</string>
+    <string name="speech_recognition_failed">Falha no reconhecimento de voz. Tente novamente.</string>
     <string name="microphone_permission_required">É necessário permitir o microfone para gravar uma nota de voz.</string>
     <string name="recording_failed">Não foi possível iniciar a gravação de áudio.</string>
     <string name="recording_too_short">A gravação foi muito curta. Tente novamente.</string>

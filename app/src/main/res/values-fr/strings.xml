@@ -133,10 +133,17 @@
     <string name="pinned">Épinglé</string>
     <string name="add_media">Ajouter des photos ou vidéos</string>
     <string name="voice_input">Saisie vocale</string>
+    <string name="cancel_voice_input">Annuler la reconnaissance vocale</string>
     <string name="record_audio">Enregistrer une note vocale</string>
     <string name="stop_recording">Arrêter l’enregistrement</string>
     <string name="cancel_recording">Annuler l’enregistrement</string>
     <string name="speech_recognition_unavailable">La reconnaissance vocale n’est pas disponible sur cet appareil.</string>
+    <string name="speech_recognition_permission_required">L’autorisation du microphone est requise pour la reconnaissance vocale.</string>
+    <string name="speech_recognition_busy">La reconnaissance vocale est occupée. Réessayez.</string>
+    <string name="speech_recognition_network_error">La reconnaissance vocale nécessite une connexion réseau. Vérifiez votre connexion et réessayez.</string>
+    <string name="speech_recognition_no_match">Aucune parole n’a été reconnue. Réessayez.</string>
+    <string name="speech_recognition_language_unavailable">La langue sélectionnée n’est pas disponible pour la reconnaissance vocale.</string>
+    <string name="speech_recognition_failed">Échec de la reconnaissance vocale. Réessayez.</string>
     <string name="microphone_permission_required">L’autorisation du microphone est requise pour enregistrer une note vocale.</string>
     <string name="recording_failed">Impossible de démarrer l’enregistrement audio.</string>
     <string name="recording_too_short">L’enregistrement était trop court. Réessayez.</string>

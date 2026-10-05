@@ -134,10 +134,17 @@
     <string name="pinned">Закреплено</string>
     <string name="add_media">Добавить фото или видео</string>
     <string name="voice_input">Голосовой ввод</string>
+    <string name="cancel_voice_input">Отменить распознавание речи</string>
     <string name="record_audio">Записать голосовую заметку</string>
     <string name="stop_recording">Остановить запись</string>
     <string name="cancel_recording">Отменить запись</string>
     <string name="speech_recognition_unavailable">Распознавание речи недоступно на этом устройстве.</string>
+    <string name="speech_recognition_permission_required">Для распознавания речи требуется доступ к микрофону.</string>
+    <string name="speech_recognition_busy">Служба распознавания речи занята. Повторите попытку.</string>
+    <string name="speech_recognition_network_error">Для распознавания речи требуется подключение к сети. Проверьте подключение и повторите попытку.</string>
+    <string name="speech_recognition_no_match">Речь не распознана. Повторите попытку.</string>
+    <string name="speech_recognition_language_unavailable">Выбранный язык недоступен для распознавания речи.</string>
+    <string name="speech_recognition_failed">Не удалось распознать речь. Повторите попытку.</string>
     <string name="microphone_permission_required">Для записи голосовой заметки требуется доступ к микрофону.</string>
     <string name="recording_failed">Не удалось начать запись звука.</string>
     <string name="recording_too_short">Запись слишком короткая. Повторите попытку.</string>

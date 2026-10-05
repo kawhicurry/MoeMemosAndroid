@@ -126,10 +126,17 @@
     <string name="select_memo">選擇一則筆記閱讀</string>
     <string name="add_media">加入圖片或影片</string>
     <string name="voice_input">語音轉文字</string>
+    <string name="cancel_voice_input">取消語音辨識</string>
     <string name="record_audio">錄製語音</string>
     <string name="stop_recording">停止錄音</string>
     <string name="cancel_recording">取消錄音</string>
     <string name="speech_recognition_unavailable">此裝置不支援語音辨識。</string>
+    <string name="speech_recognition_permission_required">語音辨識需要麥克風權限。</string>
+    <string name="speech_recognition_busy">語音辨識服務忙碌中，請稍後再試。</string>
+    <string name="speech_recognition_network_error">語音辨識需要網路連線，請檢查網路後再試。</string>
+    <string name="speech_recognition_no_match">未辨識到語音，請再試一次。</string>
+    <string name="speech_recognition_language_unavailable">所選語言不支援語音辨識。</string>
+    <string name="speech_recognition_failed">語音辨識失敗，請再試一次。</string>
     <string name="microphone_permission_required">錄製語音需要麥克風權限。</string>
     <string name="recording_failed">無法開始錄音。</string>
     <string name="recording_too_short">錄音時間太短，請再試一次。</string>

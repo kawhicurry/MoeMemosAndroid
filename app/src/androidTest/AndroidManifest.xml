@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
+
+    <application>
+        <!-- Test-APK-only audio source used while the real Google recognition UI is listening. -->
+        <receiver
+            android:name="me.mudkip.moememos.ui.page.memoinput.DeviceSpeechEmitterReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="online.kawhicurry.moememos.test.EMIT_CHINESE_SPEECH" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

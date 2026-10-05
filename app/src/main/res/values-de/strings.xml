@@ -133,10 +133,17 @@
     <string name="pinned">Angeheftet</string>
     <string name="add_media">Fotos oder Videos hinzufügen</string>
     <string name="voice_input">Spracheingabe</string>
+    <string name="cancel_voice_input">Spracherkennung abbrechen</string>
     <string name="record_audio">Sprachnotiz aufnehmen</string>
     <string name="stop_recording">Aufnahme beenden</string>
     <string name="cancel_recording">Aufnahme abbrechen</string>
     <string name="speech_recognition_unavailable">Spracherkennung ist auf diesem Gerät nicht verfügbar.</string>
+    <string name="speech_recognition_permission_required">Für die Spracherkennung ist die Mikrofonberechtigung erforderlich.</string>
+    <string name="speech_recognition_busy">Die Spracherkennung ist beschäftigt. Bitte erneut versuchen.</string>
+    <string name="speech_recognition_network_error">Für die Spracherkennung ist eine Netzwerkverbindung erforderlich. Verbindung prüfen und erneut versuchen.</string>
+    <string name="speech_recognition_no_match">Es wurde keine Sprache erkannt. Bitte erneut versuchen.</string>
+    <string name="speech_recognition_language_unavailable">Die ausgewählte Sprache ist für die Spracherkennung nicht verfügbar.</string>
+    <string name="speech_recognition_failed">Spracherkennung fehlgeschlagen. Bitte erneut versuchen.</string>
     <string name="microphone_permission_required">Zum Aufnehmen einer Sprachnotiz ist die Mikrofonberechtigung erforderlich.</string>
     <string name="recording_failed">Audioaufnahme konnte nicht gestartet werden.</string>
     <string name="recording_too_short">Die Aufnahme war zu kurz. Bitte erneut versuchen.</string>

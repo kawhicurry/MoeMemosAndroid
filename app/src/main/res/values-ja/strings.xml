@@ -135,10 +135,17 @@
     <string name="pinned">固定済み</string>
     <string name="add_media">写真または動画を追加</string>
     <string name="voice_input">音声入力</string>
+    <string name="cancel_voice_input">音声認識をキャンセル</string>
     <string name="record_audio">ボイスメモを録音</string>
     <string name="stop_recording">録音を停止</string>
     <string name="cancel_recording">録音をキャンセル</string>
     <string name="speech_recognition_unavailable">この端末では音声認識を利用できません。</string>
+    <string name="speech_recognition_permission_required">音声認識にはマイクの権限が必要です。</string>
+    <string name="speech_recognition_busy">音声認識は使用中です。もう一度お試しください。</string>
+    <string name="speech_recognition_network_error">音声認識にはネットワーク接続が必要です。接続を確認してもう一度お試しください。</string>
+    <string name="speech_recognition_no_match">音声を認識できませんでした。もう一度お試しください。</string>
+    <string name="speech_recognition_language_unavailable">選択した言語は音声認識で利用できません。</string>
+    <string name="speech_recognition_failed">音声認識に失敗しました。もう一度お試しください。</string>
     <string name="microphone_permission_required">ボイスメモの録音にはマイクの権限が必要です。</string>
     <string name="recording_failed">録音を開始できませんでした。</string>
     <string name="recording_too_short">録音が短すぎます。もう一度お試しください。</string>

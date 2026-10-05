@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -99,6 +100,8 @@ fun MemoInputPage(
     var photoImageUri by remember { mutableStateOf<Uri?>(null) }
     var showExitConfirmation by remember { mutableStateOf(false) }
     var isRecording by remember { mutableStateOf(false) }
+    var isSpeechRecognizing by remember { mutableStateOf(false) }
+    var speechPermissionRequestPending by remember { mutableStateOf(false) }
     var pendingUploadJobs by remember { mutableStateOf(0) }
     val audioRecorder = remember {
         MemoAudioRecorder(context.applicationContext) { completedRecording ->
@@ -129,6 +132,33 @@ fun MemoInputPage(
     val defaultVisibility = userStateViewModel.currentUser?.defaultVisibility ?: MemoVisibility.PRIVATE
     var currentVisibility by remember { mutableStateOf(memo?.visibility ?: defaultVisibility) }
 
+    fun showSpeechFailure(failure: SpeechRecognitionFailure) {
+        val messageResource = when (failure) {
+            SpeechRecognitionFailure.CANCELLED -> null
+            SpeechRecognitionFailure.BUSY -> R.string.speech_recognition_busy
+            SpeechRecognitionFailure.NETWORK -> R.string.speech_recognition_network_error
+            SpeechRecognitionFailure.PERMISSION_DENIED -> R.string.speech_recognition_permission_required
+            SpeechRecognitionFailure.NO_MATCH -> R.string.speech_recognition_no_match
+            SpeechRecognitionFailure.LANGUAGE_UNAVAILABLE -> R.string.speech_recognition_language_unavailable
+            SpeechRecognitionFailure.UNAVAILABLE -> R.string.speech_recognition_unavailable
+            SpeechRecognitionFailure.GENERIC -> R.string.speech_recognition_failed
+        }
+        if (messageResource != null) {
+            coroutineScope.launch {
+                snackbarState.showSnackbar(messageResource.string)
+            }
+        }
+    }
+
+    val platformSpeechRecognizer = remember(context) {
+        PlatformSpeechRecognizer(
+            context = context,
+            onResult = { recognized -> text = insertSpeechResult(text, recognized) },
+            onFailure = ::showSpeechFailure,
+            onActiveChanged = { active -> isSpeechRecognizing = active },
+        )
+    }
+
     val validMimeTypePrefixes = remember {
         setOf("text/")
     }
@@ -144,7 +174,7 @@ fun MemoInputPage(
     }
 
     fun submit() = coroutineScope.launch {
-        if (isRecording || pendingUploadJobs > 0) {
+        if (isRecording || isSpeechRecognizing || speechPermissionRequestPending || pendingUploadJobs > 0) {
             return@launch
         }
         val tags = extractCustomTags(text.text)
@@ -187,6 +217,9 @@ fun MemoInputPage(
     }
 
     fun handleExit() {
+        if (isSpeechRecognizing) {
+            platformSpeechRecognizer.cancel()
+        }
         if (isRecording || pendingUploadJobs > 0) {
             return
         }
@@ -267,30 +300,90 @@ fun MemoInputPage(
 
     val speechInput = rememberLauncherForActivityResult(StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            result.data
-                ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-                ?.firstOrNull()
-                ?.takeIf(String::isNotBlank)
+            firstSpeechResult(
+                result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            )
                 ?.let { recognized -> text = insertSpeechResult(text, recognized) }
         }
     }
 
-    fun launchSpeechInput() {
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag())
-            putExtra(RecognizerIntent.EXTRA_PROMPT, R.string.voice_input.string)
+    fun createSpeechInputIntent() = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE, speechLanguageTag(Locale.getDefault()))
+        putExtra(RecognizerIntent.EXTRA_PROMPT, R.string.voice_input.string)
+    }
+
+    val startSpeechRecognizerService: () -> Unit = serviceStart@{
+        // Permission results and quick-capture intents can be delivered after recording starts.
+        if (isRecording) return@serviceStart
+        when (platformSpeechRecognizer.start(createSpeechInputIntent())) {
+            SpeechRecognizerStartResult.STARTED -> Unit
+            SpeechRecognizerStartResult.BUSY -> showSpeechFailure(SpeechRecognitionFailure.BUSY)
+            SpeechRecognizerStartResult.PERMISSION_DENIED -> {
+                showSpeechFailure(SpeechRecognitionFailure.PERMISSION_DENIED)
+            }
+            SpeechRecognizerStartResult.UNAVAILABLE -> showSpeechFailure(SpeechRecognitionFailure.UNAVAILABLE)
         }
-        try {
-            speechInput.launch(intent)
-        } catch (_: ActivityNotFoundException) {
-            coroutineScope.launch {
-                snackbarState.showSnackbar(R.string.speech_recognition_unavailable.string)
+    }
+
+    val requestSpeechPermission = rememberLauncherForActivityResult(RequestPermission()) { granted ->
+        speechPermissionRequestPending = false
+        // Never start recognition from a stale permission result while a voice note is recording.
+        if (!isRecording) {
+            val failure = speechPermissionFailure(granted)
+            if (failure == null) {
+                startSpeechRecognizerService()
+            } else {
+                showSpeechFailure(failure)
             }
         }
     }
 
+    fun launchSpeechInput() {
+        // This guard must precede availability checks: quick-capture can re-enter an editor while
+        // its audio recorder is still finalizing, and must not launch UI or request permission.
+        if (isRecording) return
+        if (isSpeechRecognizing) {
+            platformSpeechRecognizer.cancel()
+            return
+        }
+        if (speechPermissionRequestPending) {
+            showSpeechFailure(SpeechRecognitionFailure.BUSY)
+            return
+        }
+
+        val intent = createSpeechInputIntent()
+        when (
+            coordinateSpeechInput(
+                isRecording = isRecording,
+                activityAvailable = { intent.resolveActivity(context.packageManager) != null },
+                launchActivity = { speechInput.launch(intent) },
+                isActivityNotFound = { error -> error is ActivityNotFoundException },
+                serviceAvailable = {
+                    runCatching { SpeechRecognizer.isRecognitionAvailable(context) }
+                        .getOrDefault(false)
+                },
+                audioPermissionGranted = {
+                    ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.RECORD_AUDIO,
+                    ) == PackageManager.PERMISSION_GRANTED
+                },
+            )
+        ) {
+            SpeechInputAction.BLOCKED,
+            SpeechInputAction.LAUNCH_ACTIVITY -> Unit
+            SpeechInputAction.START_SERVICE -> startSpeechRecognizerService()
+            SpeechInputAction.REQUEST_AUDIO_PERMISSION -> if (!isRecording) {
+                speechPermissionRequestPending = true
+                requestSpeechPermission.launch(Manifest.permission.RECORD_AUDIO)
+            }
+            SpeechInputAction.UNAVAILABLE -> showSpeechFailure(SpeechRecognitionFailure.UNAVAILABLE)
+        }
+    }
+
     fun startRecording() {
+        if (isSpeechRecognizing || speechPermissionRequestPending) return
         try {
             audioRecorder.start()
             isRecording = true
@@ -376,6 +469,8 @@ fun MemoInputPage(
             MemoInputTopBar(
                 isEditMode = memo != null,
                 canSubmit = !isRecording &&
+                    !isSpeechRecognizing &&
+                    !speechPermissionRequestPending &&
                     pendingUploadJobs == 0 &&
                     (text.text.isNotEmpty() || viewModel.uploadResources.isNotEmpty()),
                 onClose = { handleExit() },
@@ -403,6 +498,7 @@ fun MemoInputPage(
                     text = toggleTodoItemInText(text)
                 },
                 isRecording = isRecording,
+                isSpeechRecognizing = isSpeechRecognizing,
                 onVoiceInput = { launchSpeechInput() },
                 onToggleRecording = { toggleRecording() },
                 onCancelRecording = { cancelRecording() },
@@ -555,6 +651,11 @@ fun MemoInputPage(
                 // and enqueue it before the activity can be reclaimed.
                 finishRecording()
             }
+            if (event == Lifecycle.Event.ON_STOP && isSpeechRecognizing) {
+                // The service fallback records inside this process, so it must not stay active
+                // after the editor is backgrounded. The external Activity path is unaffected.
+                platformSpeechRecognizer.cancel()
+            }
             if (event == Lifecycle.Event.ON_STOP && autosaveEnabled && autosaveDirty && !exiting) {
                 viewModel.flushAutosaveInBackground(
                     text.text,
@@ -586,6 +687,12 @@ fun MemoInputPage(
     DisposableEffect(audioRecorder) {
         onDispose {
             audioRecorder.cancel()
+        }
+    }
+
+    DisposableEffect(platformSpeechRecognizer) {
+        onDispose {
+            platformSpeechRecognizer.destroy()
         }
     }
 }

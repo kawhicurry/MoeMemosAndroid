@@ -153,10 +153,17 @@
     <string name="pinned">Pinned</string>
     <string name="add_media">Add photos or videos</string>
     <string name="voice_input">Speech to text</string>
+    <string name="cancel_voice_input">Cancel speech recognition</string>
     <string name="record_audio">Record voice note</string>
     <string name="stop_recording">Stop recording</string>
     <string name="cancel_recording">Cancel recording</string>
     <string name="speech_recognition_unavailable">Speech recognition is not available on this device.</string>
+    <string name="speech_recognition_permission_required">Microphone permission is required for speech recognition.</string>
+    <string name="speech_recognition_busy">Speech recognition is busy. Try again.</string>
+    <string name="speech_recognition_network_error">Speech recognition needs a network connection. Check your connection and try again.</string>
+    <string name="speech_recognition_no_match">No speech was recognized. Try again.</string>
+    <string name="speech_recognition_language_unavailable">The selected language is not available for speech recognition.</string>
+    <string name="speech_recognition_failed">Speech recognition failed. Try again.</string>
     <string name="microphone_permission_required">Microphone permission is required to record a voice note.</string>
     <string name="recording_failed">Could not start audio recording.</string>
     <string name="recording_too_short">The recording was too short. Please try again.</string>

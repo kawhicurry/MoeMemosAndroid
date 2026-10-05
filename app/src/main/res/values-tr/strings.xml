@@ -133,10 +133,17 @@
     <string name="pinned">Sabitlendi</string>
     <string name="add_media">Fotoğraf veya video ekle</string>
     <string name="voice_input">Sesle yazma</string>
+    <string name="cancel_voice_input">Konuşma tanımayı iptal et</string>
     <string name="record_audio">Sesli not kaydet</string>
     <string name="stop_recording">Kaydı durdur</string>
     <string name="cancel_recording">Kaydı iptal et</string>
     <string name="speech_recognition_unavailable">Bu cihazda konuşma tanıma kullanılamıyor.</string>
+    <string name="speech_recognition_permission_required">Konuşma tanıma için mikrofon izni gerekir.</string>
+    <string name="speech_recognition_busy">Konuşma tanıma meşgul. Tekrar deneyin.</string>
+    <string name="speech_recognition_network_error">Konuşma tanıma için ağ bağlantısı gerekir. Bağlantınızı kontrol edip tekrar deneyin.</string>
+    <string name="speech_recognition_no_match">Konuşma algılanamadı. Tekrar deneyin.</string>
+    <string name="speech_recognition_language_unavailable">Seçilen dil konuşma tanıma için kullanılamıyor.</string>
+    <string name="speech_recognition_failed">Konuşma tanıma başarısız oldu. Tekrar deneyin.</string>
     <string name="microphone_permission_required">Sesli not kaydetmek için mikrofon izni gerekir.</string>
     <string name="recording_failed">Ses kaydı başlatılamadı.</string>
     <string name="recording_too_short">Kayıt çok kısaydı. Lütfen tekrar deneyin.</string>

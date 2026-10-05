@@ -144,6 +144,7 @@ internal fun MemoInputBottomBar(
     onTagSelected: (String) -> Unit,
     onToggleTodoItem: () -> Unit,
     isRecording: Boolean,
+    isSpeechRecognizing: Boolean,
     onVoiceInput: () -> Unit,
     onToggleRecording: () -> Unit,
     onCancelRecording: () -> Unit,
@@ -237,16 +238,24 @@ internal fun MemoInputBottomBar(
                 }
 
                 ActionIconButton(
-                    label = stringResource(R.string.voice_input),
+                    label = stringResource(
+                        if (isSpeechRecognizing) R.string.cancel_voice_input else R.string.voice_input
+                    ),
                     onClick = onVoiceInput,
                     enabled = !isRecording,
                 ) {
-                    Icon(Icons.Outlined.RecordVoiceOver, contentDescription = stringResource(R.string.voice_input))
+                    Icon(
+                        if (isSpeechRecognizing) Icons.Outlined.StopCircle else Icons.Outlined.RecordVoiceOver,
+                        contentDescription = stringResource(
+                            if (isSpeechRecognizing) R.string.cancel_voice_input else R.string.voice_input
+                        ),
+                    )
                 }
 
                 ActionIconButton(
                     label = stringResource(if (isRecording) R.string.stop_recording else R.string.record_audio),
-                    onClick = onToggleRecording
+                    onClick = onToggleRecording,
+                    enabled = !isSpeechRecognizing,
                 ) {
                     Icon(
                         if (isRecording) Icons.Outlined.StopCircle else Icons.Outlined.Mic,
@@ -263,7 +272,7 @@ internal fun MemoInputBottomBar(
                 ActionIconButton(
                     label = stringResource(R.string.add_media),
                     onClick = onPickMedia,
-                    enabled = !isRecording,
+                    enabled = !isRecording && !isSpeechRecognizing,
                 ) {
                     Icon(Icons.Outlined.PermMedia, contentDescription = stringResource(R.string.add_media))
                 }
@@ -271,7 +280,7 @@ internal fun MemoInputBottomBar(
                 ActionIconButton(
                     label = stringResource(R.string.attachment),
                     onClick = onPickAttachment,
-                    enabled = !isRecording,
+                    enabled = !isRecording && !isSpeechRecognizing,
                 ) {
                     Icon(Icons.Outlined.Attachment, contentDescription = stringResource(R.string.attachment))
                 }
@@ -279,7 +288,7 @@ internal fun MemoInputBottomBar(
                 ActionIconButton(
                     label = stringResource(R.string.take_photo),
                     onClick = onTakePhoto,
-                    enabled = !isRecording,
+                    enabled = !isRecording && !isSpeechRecognizing,
                 ) {
                     Icon(Icons.Outlined.PhotoCamera, contentDescription = stringResource(R.string.take_photo))
                 }
