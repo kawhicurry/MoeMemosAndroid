@@ -1,6 +1,7 @@
 package me.mudkip.moememos.ui.component
 
 import android.content.ClipData
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.webkit.MimeTypeMap
@@ -9,7 +10,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Attachment
+import androidx.compose.material.icons.outlined.AudioFile
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.VideoFile
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.DropdownMenu
@@ -79,9 +84,9 @@ fun Attachment(
                     return@launch
                 }
                 val fileUri = MoeMemosFileProvider.getFileUri(context, localFile)
-                val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                    type = resolveMimeType(resource, localFile)
-                    putExtra(Intent.EXTRA_STREAM, fileUri)
+                val mimeType = resolveMimeType(resource, localFile)
+                val viewIntent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(fileUri, mimeType)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     clipData = ClipData.newUri(
                         context.contentResolver,
@@ -89,7 +94,17 @@ fun Attachment(
                         fileUri
                     )
                 }
-                context.startActivity(Intent.createChooser(shareIntent, null))
+                try {
+                    context.startActivity(Intent.createChooser(viewIntent, null))
+                } catch (_: ActivityNotFoundException) {
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = mimeType
+                        putExtra(Intent.EXTRA_STREAM, fileUri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        clipData = viewIntent.clipData
+                    }
+                    context.startActivity(Intent.createChooser(shareIntent, null))
+                }
             } catch (e: Throwable) {
                 Timber.d(e)
                 Toast.makeText(context, R.string.failed_to_open_attachment.string, Toast.LENGTH_SHORT).show()
@@ -112,7 +127,7 @@ fun Attachment(
         label = { Text(resource.filename) },
         leadingIcon = {
             Icon(
-                Icons.Outlined.Attachment,
+                attachmentIcon(resource.mimeType),
                 contentDescription = R.string.attachment.string,
                 Modifier.size(AssistChipDefaults.IconSize)
             )
@@ -151,6 +166,15 @@ fun Attachment(
                 }
             )
         }
+    }
+}
+
+private fun attachmentIcon(mimeType: String?): ImageVector {
+    return when {
+        mimeType?.startsWith("audio/") == true -> Icons.Outlined.AudioFile
+        mimeType?.startsWith("video/") == true -> Icons.Outlined.VideoFile
+        mimeType?.startsWith("image/") == true -> Icons.Outlined.Image
+        else -> Icons.Outlined.Attachment
     }
 }
 

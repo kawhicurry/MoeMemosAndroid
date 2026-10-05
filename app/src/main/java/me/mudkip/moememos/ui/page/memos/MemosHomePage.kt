@@ -1,5 +1,7 @@
 package me.mudkip.moememos.ui.page.memos
 
+import androidx.activity.ComponentActivity
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -10,32 +12,46 @@ import androidx.compose.material3.DrawerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
-import me.mudkip.moememos.ui.component.ActionIconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.setValue
-import androidx.navigation.NavHostController
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
+import androidx.navigation.NavHostController
 import kotlinx.coroutines.launch
 import me.mudkip.moememos.R
 import me.mudkip.moememos.data.model.Account
 import me.mudkip.moememos.ext.string
+import me.mudkip.moememos.ui.component.ActionIconButton
 import me.mudkip.moememos.ui.component.SyncStatusBadge
+import me.mudkip.moememos.ui.component.SpaceProfileHeader
 import me.mudkip.moememos.ui.page.common.LocalRootNavController
 import me.mudkip.moememos.ui.page.common.RouteName
+import me.mudkip.moememos.ui.theme.SpaceBlue
 import me.mudkip.moememos.viewmodel.LocalMemos
 import me.mudkip.moememos.viewmodel.LocalUserState
 import me.mudkip.moememos.viewmodel.ManualSyncResult
 import java.net.URLEncoder
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 @Composable
 fun MemosHomePage(
@@ -54,6 +70,7 @@ private fun MemosHomePageContent(
     navController: NavHostController,
     onMemoClick: (String) -> Unit,
 ) {
+    SpaceHomeStatusBarStyle()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val rootNavController = LocalRootNavController.current
@@ -61,6 +78,15 @@ private fun MemosHomePageContent(
     val userStateViewModel = LocalUserState.current
     val currentAccount by userStateViewModel.currentAccount.collectAsStateWithLifecycle()
     val syncStatus by memosViewModel.syncStatus.collectAsStateWithLifecycle()
+    val currentUser = userStateViewModel.currentUser
+    val accountDays = remember(currentUser?.startDate) {
+        currentUser?.let { user ->
+            ChronoUnit.DAYS.between(
+                user.startDate.atZone(ZoneId.systemDefault()).toLocalDate(),
+                LocalDate.now(),
+            ).coerceAtLeast(0)
+        } ?: 0L
+    }
 
     val expandedFab by remember {
         derivedStateOf {
@@ -86,9 +112,11 @@ private fun MemosHomePageContent(
 
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         topBar = {
             TopAppBar(
-                title = { Text(text = R.string.memos.string) },
+                modifier = Modifier.testTag("space_top_bar"),
+                title = { Text(text = R.string.my_space.string) },
                 navigationIcon = {
                     if (drawerState != null) {
                         ActionIconButton(label = R.string.menu.string, onClick = { scope.launch { drawerState.open() } }) {
@@ -113,12 +141,20 @@ private fun MemosHomePageContent(
                     }) {
                         Icon(Icons.Filled.Search, contentDescription = R.string.search.string)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = SpaceBlue,
+                    scrolledContainerColor = SpaceBlue,
+                    navigationIconContentColor = androidx.compose.ui.graphics.Color.White,
+                    titleContentColor = androidx.compose.ui.graphics.Color.White,
+                    actionIconContentColor = androidx.compose.ui.graphics.Color.White,
+                ),
             )
         },
 
         floatingActionButton = {
             ExtendedFloatingActionButton(
+                modifier = Modifier.testTag("space_compose_fab"),
                 onClick = {
                     rootNavController.navigate(RouteName.INPUT)
                 },
@@ -140,10 +176,33 @@ private fun MemosHomePageContent(
                         launchSingleTop = true
                         restoreState = true
                     }
-                }
+                },
+                headerContent = {
+                    SpaceProfileHeader(
+                        displayName = currentUser?.name.orEmpty(),
+                        avatarUrl = currentUser?.avatarUrl,
+                        host = userStateViewModel.host,
+                        memoCount = memosViewModel.memos.size,
+                        tagCount = memosViewModel.tags.size,
+                        dayCount = accountDays,
+                        onCompose = { rootNavController.navigate(RouteName.INPUT) },
+                        onResources = { rootNavController.navigate(RouteName.RESOURCE) },
+                        onArchived = {
+                            navController.navigate(RouteName.ARCHIVED) {
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        onSearch = { navController.navigate(RouteName.SEARCH) },
+                    )
+                },
             )
         }
     )
+
+    LaunchedEffect(Unit) {
+        memosViewModel.loadTags()
+    }
 
     when (val alert = syncAlert) {
         null -> Unit
@@ -194,6 +253,24 @@ private fun MemosHomePageContent(
                     }
                 }
             )
+        }
+    }
+}
+
+@Composable
+private fun SpaceHomeStatusBarStyle() {
+    val view = LocalView.current
+    val darkTheme = isSystemInDarkTheme()
+    val activity = view.context as? ComponentActivity
+    val controller = activity?.window?.let { window ->
+        WindowCompat.getInsetsController(window, view)
+    }
+    SideEffect {
+        controller?.isAppearanceLightStatusBars = false
+    }
+    DisposableEffect(view, darkTheme) {
+        onDispose {
+            controller?.isAppearanceLightStatusBars = !darkTheme
         }
     }
 }

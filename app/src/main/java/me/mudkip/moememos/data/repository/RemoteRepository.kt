@@ -2,6 +2,8 @@ package me.mudkip.moememos.data.repository
 
 import com.skydoves.sandwich.ApiResponse
 import me.mudkip.moememos.data.model.Memo
+import me.mudkip.moememos.data.model.MemoComment
+import me.mudkip.moememos.data.model.MemoReaction
 import me.mudkip.moememos.data.model.MemoVisibility
 import me.mudkip.moememos.data.model.Resource
 import me.mudkip.moememos.data.model.User
@@ -19,7 +21,9 @@ abstract class RemoteRepository {
         visibility: MemoVisibility,
         resourceRemoteIds: List<String>,
         tags: List<String>? = null,
-        createdAt: Instant? = null
+        createdAt: Instant? = null,
+        /** Stable client-selected ID when the remote protocol supports idempotent recovery. */
+        memoId: String? = null,
     ): ApiResponse<Memo>
 
     abstract suspend fun updateMemo(
@@ -41,9 +45,27 @@ abstract class RemoteRepository {
         type: MediaType?,
         contentLength: Long?,
         openInputStream: () -> InputStream,
-        memoRemoteId: String? = null
+        memoRemoteId: String? = null,
+        /** Stable client-selected ID when the remote protocol supports idempotent recovery. */
+        resourceId: String? = null,
     ): ApiResponse<Resource>
 
     abstract suspend fun deleteResource(remoteId: String): ApiResponse<Unit>
     abstract suspend fun getCurrentUser(): ApiResponse<User>
+
+    open suspend fun listMemoComments(remoteId: String): ApiResponse<List<MemoComment>> =
+        ApiResponse.exception(UnsupportedOperationException("Comments require Memos v1"))
+
+    open suspend fun createMemoComment(remoteId: String, content: String): ApiResponse<MemoComment> =
+        ApiResponse.exception(UnsupportedOperationException("Comments require Memos v1"))
+
+    open suspend fun listMemoReactions(remoteId: String): ApiResponse<List<MemoReaction>> =
+        ApiResponse.exception(UnsupportedOperationException("Reactions require Memos v1"))
+
+    /** Toggles [reactionType] for the authenticated user and returns the canonical server list. */
+    open suspend fun toggleMemoReaction(
+        remoteId: String,
+        reactionType: String,
+    ): ApiResponse<List<MemoReaction>> =
+        ApiResponse.exception(UnsupportedOperationException("Reactions require Memos v1"))
 }

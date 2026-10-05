@@ -6,28 +6,38 @@ import androidx.core.content.IntentCompat
 
 data class ShareContent(
     val text: String = "",
-    val images: List<Uri> = ArrayList()
+    val attachments: List<Uri> = emptyList(),
 ) {
+    /** Compatibility name for callers compiled against the former image-only model. */
+    val images: List<Uri>
+        get() = attachments
+
     companion object {
         fun parseIntent(intent: Intent): ShareContent {
             val text = intent.getStringExtra(Intent.EXTRA_TEXT)
-            val images = ArrayList<Uri>()
+            val attachments = LinkedHashSet<Uri>()
 
             when (intent.action) {
                 Intent.ACTION_SEND -> {
                     IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.let {
-                        images.add(it)
+                        attachments.add(it)
                     }
                 }
 
                 Intent.ACTION_SEND_MULTIPLE -> {
                     IntentCompat.getParcelableArrayListExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.let {
-                        images.addAll(it.filterIsInstance<Uri>())
+                        attachments.addAll(it.filterIsInstance<Uri>())
                     }
                 }
             }
 
-            return ShareContent(text ?: "", images)
+            intent.clipData?.let { clip ->
+                for (index in 0 until clip.itemCount) {
+                    clip.getItemAt(index).uri?.let(attachments::add)
+                }
+            }
+
+            return ShareContent(text ?: "", attachments.toList())
         }
     }
 }

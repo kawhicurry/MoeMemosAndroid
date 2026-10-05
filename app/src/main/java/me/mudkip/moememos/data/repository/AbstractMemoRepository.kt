@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.emptyFlow
 import me.mudkip.moememos.data.local.entity.MemoEntity
 import me.mudkip.moememos.data.local.entity.ResourceEntity
 import me.mudkip.moememos.data.model.MemoVisibility
+import me.mudkip.moememos.data.model.MemoComment
+import me.mudkip.moememos.data.model.MemoReaction
+import me.mudkip.moememos.data.model.MemoSocialSnapshot
 import me.mudkip.moememos.data.model.SyncStatus
 import me.mudkip.moememos.data.model.User
 import okhttp3.MediaType
@@ -35,6 +38,18 @@ abstract class AbstractMemoRepository {
     abstract suspend fun deleteResource(identifier: String): ApiResponse<Unit>
 
     abstract suspend fun getCurrentUser(): ApiResponse<User>
+
+    open suspend fun getMemoSocial(identifier: String): ApiResponse<MemoSocialSnapshot> =
+        ApiResponse.exception(UnsupportedOperationException("Social interactions require Memos v1"))
+
+    open suspend fun createMemoComment(identifier: String, content: String): ApiResponse<MemoComment> =
+        ApiResponse.exception(UnsupportedOperationException("Comments require Memos v1"))
+
+    open suspend fun toggleMemoReaction(
+        identifier: String,
+        reactionType: String,
+    ): ApiResponse<List<MemoReaction>> =
+        ApiResponse.exception(UnsupportedOperationException("Reactions require Memos v1"))
 
     open fun observeMemos(): Flow<List<MemoEntity>> = emptyFlow()
 

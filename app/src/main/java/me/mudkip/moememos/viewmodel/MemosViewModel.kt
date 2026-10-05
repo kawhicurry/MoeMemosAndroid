@@ -32,6 +32,9 @@ import me.mudkip.moememos.data.local.entity.MemoEntity
 import me.mudkip.moememos.data.local.entity.ResourceEntity
 import me.mudkip.moememos.data.model.DailyUsageStat
 import me.mudkip.moememos.data.model.MemoVisibility
+import me.mudkip.moememos.data.model.MemoComment
+import me.mudkip.moememos.data.model.MemoReaction
+import me.mudkip.moememos.data.model.MemoSocialSnapshot
 import me.mudkip.moememos.data.model.SyncStatus
 import me.mudkip.moememos.data.service.AccountService
 import me.mudkip.moememos.data.service.MemoService
@@ -148,6 +151,9 @@ class MemosViewModel @Inject constructor(
                     compatibility.message ?: MemosVersionSupport.supportedVersionsMessage(appContext)
                 )
             }
+            is AccountService.SyncCompatibility.Unavailable -> {
+                return@withContext ManualSyncResult.Failed(compatibility.message)
+            }
             is AccountService.SyncCompatibility.RequiresConfirmation -> {
                 return@withContext ManualSyncResult.RequiresConfirmation(
                     version = compatibility.version,
@@ -223,6 +229,25 @@ class MemosViewModel @Inject constructor(
             is ApiResponse.Success -> response.data.firstOrNull { it.identifier == resourceIdentifier }
             else -> null
         }
+    }
+
+    suspend fun getMemoSocial(memoIdentifier: String): ApiResponse<MemoSocialSnapshot> =
+        withContext(viewModelScope.coroutineContext) {
+            memoService.getRepository().getMemoSocial(memoIdentifier)
+        }
+
+    suspend fun createMemoComment(
+        memoIdentifier: String,
+        content: String,
+    ): ApiResponse<MemoComment> = withContext(viewModelScope.coroutineContext) {
+        memoService.getRepository().createMemoComment(memoIdentifier, content)
+    }
+
+    suspend fun toggleMemoReaction(
+        memoIdentifier: String,
+        reactionType: String,
+    ): ApiResponse<List<MemoReaction>> = withContext(viewModelScope.coroutineContext) {
+        memoService.getRepository().toggleMemoReaction(memoIdentifier, reactionType)
     }
 
     private fun updateMemo(memo: MemoEntity) {

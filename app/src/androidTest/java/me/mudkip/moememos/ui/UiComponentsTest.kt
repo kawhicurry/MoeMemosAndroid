@@ -1,6 +1,8 @@
 package me.mudkip.moememos.ui
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -19,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
@@ -36,6 +39,7 @@ import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -48,12 +52,16 @@ import androidx.test.espresso.Espresso
 import androidx.test.platform.app.InstrumentationRegistry
 import me.mudkip.moememos.R
 import me.mudkip.moememos.ui.component.ActionIconButton
+import me.mudkip.moememos.ui.component.SpaceProfileHeader
+import me.mudkip.moememos.ui.component.SpaceMemoActionBar
+import me.mudkip.moememos.ui.component.SpaceMemoMediaSummary
 import me.mudkip.moememos.ui.page.memos.MemoListDetailLayout
 import me.mudkip.moememos.ui.page.memos.MemosNavigationDrawer
 import me.mudkip.moememos.ui.page.memos.MemoSearchBar
 import me.mudkip.moememos.ui.page.memos.PagingStatus
 import me.mudkip.moememos.ui.page.settings.SettingSwitchItem
 import me.mudkip.moememos.ui.util.edgeToEdgeContentPadding
+import me.mudkip.moememos.ui.theme.MoeMemosTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -155,6 +163,115 @@ class UiComponentsTest {
         compose.onNodeWithText(context.getString(R.string.failed_to_load_memos)).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.retry)).performClick()
         compose.runOnIdle { assertEquals(1, retries) }
+    }
+
+    @Test fun spaceProfileHeaderShowsRealStatsAndWorkingQuickActions() {
+        var action = ""
+        compose.setContent {
+            MoeMemosTheme(dynamicColor = false) {
+                Box(Modifier.width(300.dp)) {
+                    SpaceProfileHeader(
+                        displayName = "Sky Walker",
+                        avatarUrl = null,
+                        host = "",
+                        memoCount = 42,
+                        tagCount = 7,
+                        dayCount = 365,
+                        onCompose = { action = "compose" },
+                        onResources = { action = "resources" },
+                        onArchived = { action = "archived" },
+                        onSearch = { action = "search" },
+                    )
+                }
+            }
+        }
+
+        compose.onNodeWithTag("space_profile_header").assertIsDisplayed()
+        compose.onNodeWithTag("space_cover").assertIsDisplayed()
+        compose.onNodeWithTag("space_stats").assertIsDisplayed()
+        compose.onNodeWithText("Sky Walker").assertIsDisplayed()
+        compose.onNodeWithTag("space_stat_memos").assertIsDisplayed()
+        compose.onNodeWithTag("space_stat_tags").assertIsDisplayed()
+        compose.onNodeWithTag("space_stat_days").assertIsDisplayed()
+        compose.onNodeWithTag("space_quick_action_compose").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals("compose", action) }
+        compose.onNodeWithTag("space_quick_action_resources").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals("resources", action) }
+        compose.onNodeWithTag("space_quick_action_archived").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals("archived", action) }
+        compose.onNodeWithTag("space_quick_action_search").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals("search", action) }
+    }
+
+    @Test fun spaceProfileHeaderRendersInDarkThemeAtWideWidth() {
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f)) {
+                MoeMemosTheme(darkTheme = true, dynamicColor = false) {
+                    Box(Modifier.width(720.dp)) {
+                        SpaceProfileHeader(
+                            displayName = "Night Walker",
+                            avatarUrl = null,
+                            host = "",
+                            memoCount = 8,
+                            tagCount = 3,
+                            dayCount = 20,
+                            onCompose = {},
+                            onResources = {},
+                            onArchived = {},
+                            onSearch = {},
+                        )
+                    }
+                }
+            }
+        }
+
+        compose.onNodeWithTag("space_profile_header").assertIsDisplayed()
+        compose.onNodeWithTag("space_quick_actions").assertIsDisplayed()
+        compose.onNodeWithTag("space_activity_header").assertIsDisplayed()
+    }
+
+    @Test fun memoActionBarKeepsShareEditPinAndArchiveDiscoverableAtCompactWidth() {
+        val actions = mutableListOf<String>()
+        compose.setContent {
+            MoeMemosTheme(dynamicColor = false) {
+                var pinned by remember { mutableStateOf(false) }
+                Box(Modifier.width(300.dp)) {
+                    SpaceMemoActionBar(
+                        pinned = pinned,
+                        onShare = { actions += "share" },
+                        onEdit = { actions += "edit" },
+                        onTogglePin = {
+                            actions += "pin"
+                            pinned = !pinned
+                        },
+                        onArchive = { actions += "archive" },
+                    )
+                }
+            }
+        }
+
+        compose.onNodeWithTag("space_memo_action_share").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("space_memo_action_edit").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("space_memo_action_pin").assertIsDisplayed().performClick()
+        compose.onNodeWithText(context.getString(R.string.unpin)).assertIsDisplayed()
+        compose.onNodeWithTag("space_memo_action_archive").assertIsDisplayed().performClick()
+        compose.runOnIdle {
+            assertEquals(listOf("share", "edit", "pin", "archive"), actions)
+        }
+    }
+
+    @Test fun memoMediaSummaryExposesImageAndOtherAttachmentCounts() {
+        compose.setContent {
+            MoeMemosTheme(dynamicColor = false) {
+                SpaceMemoMediaSummary(imageCount = 2, attachmentCount = 3)
+            }
+        }
+
+        compose.onNodeWithTag("space_memo_media_summary").assertIsDisplayed()
+        compose.onNodeWithTag("space_memo_media_images").assertIsDisplayed()
+        compose.onNodeWithTag("space_memo_media_attachments").assertIsDisplayed()
+        compose.onNodeWithContentDescription("2 ${context.getString(R.string.image)}").assertIsDisplayed()
+        compose.onNodeWithContentDescription("3 ${context.getString(R.string.attachment)}").assertIsDisplayed()
     }
 
     @Test fun compactMemoSelectionRestoresAndBackReturnsToList() {

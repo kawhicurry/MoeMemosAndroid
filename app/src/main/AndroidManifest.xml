@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:name=".MoeMemosApp"
@@ -32,17 +33,12 @@
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="image/*" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/plain" />
+                <data android:mimeType="*/*" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="image/*" />
+                <data android:mimeType="*/*" />
             </intent-filter>
 
             <meta-data android:name="android.app.shortcuts"
@@ -64,7 +60,7 @@
         </activity>
         
         <provider
-            android:authorities="me.mudkip.moememos.fileprovider"
+            android:authorities="${applicationId}.fileprovider"
             android:name=".MoeMemosFileProvider"
             android:grantUriPermissions="true"
             android:exported="false">
@@ -97,6 +93,18 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/memory_glance_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.QuickCaptureGlanceWidgetReceiver"
+            android:label="@string/quick_capture_widget_title"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_capture_glance_widget_info" />
         </receiver>
     </application>
 

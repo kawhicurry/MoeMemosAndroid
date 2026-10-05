@@ -31,19 +31,41 @@ interface MemosV1Api {
     ): ApiResponse<ListMemosResponse>
 
     @POST("api/v1/memos")
-    suspend fun createMemo(@Body body: MemosV1CreateMemoRequest): ApiResponse<MemosV1Memo>
+    suspend fun createMemo(
+        @Query("memoId") memoId: String? = null,
+        @Body body: MemosV1CreateMemoRequest,
+    ): ApiResponse<MemosV1Memo>
+
+    @GET("api/v1/memos/{id}")
+    suspend fun getMemo(@Path("id") memoId: String): ApiResponse<MemosV1Memo>
 
     @PATCH("api/v1/memos/{id}")
-    suspend fun updateMemo(@Path("id") memoId: String, @Body body: UpdateMemoRequest): ApiResponse<MemosV1Memo>
+    suspend fun updateMemo(
+        @Path("id") memoId: String,
+        @Query("updateMask") updateMask: String,
+        @Body body: UpdateMemoRequest,
+    ): ApiResponse<MemosV1Memo>
 
     @DELETE("api/v1/memos/{id}")
     suspend fun deleteMemo(@Path("id") memoId: String): ApiResponse<Unit>
 
     @GET("api/v1/attachments")
-    suspend fun listResources(): ApiResponse<ListResourceResponse>
+    suspend fun listResources(
+        @Query("pageSize") pageSize: Int,
+        @Query("pageToken") pageToken: String? = null,
+    ): ApiResponse<ListResourceResponse>
 
     @POST("api/v1/attachments")
-    suspend fun createResource(@Body body: RequestBody): ApiResponse<MemosV1Resource>
+    suspend fun createResource(
+        @Query("attachmentId") attachmentId: String? = null,
+        @Body body: RequestBody,
+    ): ApiResponse<MemosV1Resource>
+
+    @POST("api/v1/attachments:upload")
+    suspend fun uploadResource(@Body body: MemosV1UploadAttachmentRequest): ApiResponse<MemosV1UploadAttachmentResponse>
+
+    @GET("api/v1/attachments/{id}")
+    suspend fun getResource(@Path("id") resourceId: String): ApiResponse<MemosV1Resource>
 
     @DELETE("api/v1/attachments/{id}")
     suspend fun deleteResource(@Path("id") resourceId: String): ApiResponse<Unit>
@@ -56,6 +78,40 @@ interface MemosV1Api {
 
     @GET("api/v1/users/{id}:getStats")
     suspend fun getUserStats(@Path("id") userId: String): ApiResponse<MemosV1Stats>
+
+    @POST("api/v1/memos/{id}/comments")
+    suspend fun createMemoComment(
+        @Path("id") memoId: String,
+        @Query("commentId") commentId: String? = null,
+        @Body body: MemosV1CreateMemoRequest,
+    ): ApiResponse<MemosV1Memo>
+
+    @GET("api/v1/memos/{id}/comments")
+    suspend fun listMemoComments(
+        @Path("id") memoId: String,
+        @Query("pageSize") pageSize: Int,
+        @Query("pageToken") pageToken: String? = null,
+        @Query("orderBy") orderBy: String? = null,
+    ): ApiResponse<MemosV1ListMemoCommentsResponse>
+
+    @POST("api/v1/memos/{id}/reactions")
+    suspend fun upsertMemoReaction(
+        @Path("id") memoId: String,
+        @Body body: MemosV1UpsertReactionRequest,
+    ): ApiResponse<MemosV1Reaction>
+
+    @GET("api/v1/memos/{id}/reactions")
+    suspend fun listMemoReactions(
+        @Path("id") memoId: String,
+        @Query("pageSize") pageSize: Int,
+        @Query("pageToken") pageToken: String? = null,
+    ): ApiResponse<MemosV1ListMemoReactionsResponse>
+
+    @DELETE("api/v1/memos/{memoId}/reactions/{reactionId}")
+    suspend fun deleteMemoReaction(
+        @Path("memoId") memoId: String,
+        @Path("reactionId") reactionId: String,
+    ): ApiResponse<Unit>
 }
 
 @Serializable
@@ -84,6 +140,7 @@ data class MemosV1CreateMemoRequest(
     val content: String,
     val visibility: MemosVisibility?,
     val attachments: List<MemosV1Resource>?,
+    val space: String? = null,
     @Serializable(with = Rfc3339InstantSerializer::class)
     val createTime: Instant? = null
 )
@@ -103,11 +160,25 @@ data class UpdateMemoRequest(
     @Serializable(with = Rfc3339InstantSerializer::class)
     val updateTime: Instant? = null,
     val attachments: List<MemosV1Resource>? = null
-)
+) {
+    /**
+     * Memos 0.31 requires a non-empty protobuf FieldMask in the query string. Keep the
+     * paths in proto snake_case even though the JSON body uses lowerCamelCase.
+     */
+    fun updateMask(): String = buildList {
+        if (content != null) add("content")
+        if (visibility != null) add("visibility")
+        if (state != null) add("state")
+        if (pinned != null) add("pinned")
+        if (updateTime != null) add("update_time")
+        if (attachments != null) add("attachments")
+    }.joinToString(",")
+}
 
 @Serializable
 data class ListResourceResponse(
-    val attachments: List<MemosV1Resource>
+    val attachments: List<MemosV1Resource>,
+    val nextPageToken: String? = null,
 )
 
 @Serializable
@@ -123,6 +194,8 @@ data class MemosV1Memo(
     val name: String,
     val state: MemosV1State? = null,
     val creator: String? = null,
+    /** Memos 0.31 placement, for example `spaces/{id}`. */
+    val space: String? = null,
     @Serializable(with = Rfc3339InstantSerializer::class)
     val createTime: Instant? = null,
     @Serializable(with = Rfc3339InstantSerializer::class)
@@ -131,7 +204,10 @@ data class MemosV1Memo(
     val visibility: MemosVisibility? = null,
     val pinned: Boolean? = null,
     val attachments: List<MemosV1Resource>? = null,
-    val tags: List<String>? = null
+    val tags: List<String>? = null,
+    val reactions: List<MemosV1Reaction>? = null,
+    /** Set for comment memos; fetching the parent still requires normal read permission. */
+    val parent: String? = null,
 )
 
 @Serializable
@@ -153,6 +229,67 @@ data class MemosV1Resource(
             .buildUpon().appendPath("file").appendEncodedPath(name ?: "").appendPath(filename ?: "").build()
     }
 }
+
+@Serializable
+data class MemosV1UploadAttachmentRequest(
+    val spec: MemosV1UploadAttachmentSpec? = null,
+    val uploadId: String? = null,
+    /** Proto JSON represents int64 values as decimal strings. */
+    val writeOffset: String,
+    /** Base64-encoded raw bytes, as required by proto JSON's bytes mapping. */
+    val data: String? = null,
+    val finishWrite: Boolean = false,
+)
+
+@Serializable
+data class MemosV1UploadAttachmentSpec(
+    val attachment: MemosV1UploadAttachment,
+    val attachmentId: String? = null,
+    /** Proto JSON represents int64 values as decimal strings. */
+    val totalSize: String,
+)
+
+@Serializable
+data class MemosV1UploadAttachment(
+    val filename: String,
+    val type: String,
+    val memo: String? = null,
+)
+
+@Serializable
+data class MemosV1UploadAttachmentResponse(
+    val uploadId: String = "",
+    /** Proto JSON represents int64 values as decimal strings. */
+    val committedSize: String = "0",
+    val attachment: MemosV1Resource? = null,
+    val maxChunkSize: Int = 0,
+)
+
+@Serializable
+data class MemosV1Reaction(
+    val name: String? = null,
+    val creator: String? = null,
+    val reactionType: String,
+    @Serializable(with = Rfc3339InstantSerializer::class)
+    val createTime: Instant? = null,
+)
+
+@Serializable
+data class MemosV1UpsertReactionRequest(
+    val reaction: MemosV1Reaction,
+)
+
+@Serializable
+data class MemosV1ListMemoCommentsResponse(
+    val memos: List<MemosV1Memo>,
+    val nextPageToken: String? = null,
+)
+
+@Serializable
+data class MemosV1ListMemoReactionsResponse(
+    val reactions: List<MemosV1Reaction>,
+    val nextPageToken: String? = null,
+)
 
 @Serializable
 data class MemosV1UserSettingGeneralSetting(

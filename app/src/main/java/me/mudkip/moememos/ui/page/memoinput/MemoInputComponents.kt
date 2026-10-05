@@ -29,8 +29,11 @@ import androidx.compose.material.icons.outlined.FormatBold
 import androidx.compose.material.icons.outlined.FormatItalic
 import androidx.compose.material.icons.outlined.FormatListNumbered
 import androidx.compose.material.icons.outlined.FormatStrikethrough
-import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.Mic
+import androidx.compose.material.icons.outlined.PermMedia
 import androidx.compose.material.icons.outlined.PhotoCamera
+import androidx.compose.material.icons.outlined.RecordVoiceOver
+import androidx.compose.material.icons.outlined.StopCircle
 import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
@@ -140,7 +143,11 @@ internal fun MemoInputBottomBar(
     onHashTagClick: () -> Unit,
     onTagSelected: (String) -> Unit,
     onToggleTodoItem: () -> Unit,
-    onPickImage: () -> Unit,
+    isRecording: Boolean,
+    onVoiceInput: () -> Unit,
+    onToggleRecording: () -> Unit,
+    onCancelRecording: () -> Unit,
+    onPickMedia: () -> Unit,
     onPickAttachment: () -> Unit,
     onTakePhoto: () -> Unit,
     onFormat: (MarkdownFormat) -> Unit,
@@ -229,15 +236,51 @@ internal fun MemoInputBottomBar(
                     Icon(Icons.Outlined.CheckBox, contentDescription = stringResource(R.string.add_task))
                 }
 
-                ActionIconButton(label = stringResource(R.string.add_image), onClick = onPickImage) {
-                    Icon(Icons.Outlined.Image, contentDescription = stringResource(R.string.add_image))
+                ActionIconButton(
+                    label = stringResource(R.string.voice_input),
+                    onClick = onVoiceInput,
+                    enabled = !isRecording,
+                ) {
+                    Icon(Icons.Outlined.RecordVoiceOver, contentDescription = stringResource(R.string.voice_input))
                 }
 
-                ActionIconButton(label = stringResource(R.string.attachment), onClick = onPickAttachment) {
+                ActionIconButton(
+                    label = stringResource(if (isRecording) R.string.stop_recording else R.string.record_audio),
+                    onClick = onToggleRecording
+                ) {
+                    Icon(
+                        if (isRecording) Icons.Outlined.StopCircle else Icons.Outlined.Mic,
+                        contentDescription = stringResource(if (isRecording) R.string.stop_recording else R.string.record_audio)
+                    )
+                }
+
+                if (isRecording) {
+                    ActionIconButton(label = stringResource(R.string.cancel_recording), onClick = onCancelRecording) {
+                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.cancel_recording))
+                    }
+                }
+
+                ActionIconButton(
+                    label = stringResource(R.string.add_media),
+                    onClick = onPickMedia,
+                    enabled = !isRecording,
+                ) {
+                    Icon(Icons.Outlined.PermMedia, contentDescription = stringResource(R.string.add_media))
+                }
+
+                ActionIconButton(
+                    label = stringResource(R.string.attachment),
+                    onClick = onPickAttachment,
+                    enabled = !isRecording,
+                ) {
                     Icon(Icons.Outlined.Attachment, contentDescription = stringResource(R.string.attachment))
                 }
 
-                ActionIconButton(label = stringResource(R.string.take_photo), onClick = onTakePhoto) {
+                ActionIconButton(
+                    label = stringResource(R.string.take_photo),
+                    onClick = onTakePhoto,
+                    enabled = !isRecording,
+                ) {
                     Icon(Icons.Outlined.PhotoCamera, contentDescription = stringResource(R.string.take_photo))
                 }
 

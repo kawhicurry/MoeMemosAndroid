@@ -5,11 +5,14 @@ import androidx.core.net.toUri
 import com.skydoves.sandwich.ApiResponse
 import com.skydoves.sandwich.StatusCode
 import com.skydoves.sandwich.getOrNull
+import com.skydoves.sandwich.mapSuccess
 import com.skydoves.sandwich.retrofit.statusCode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +30,9 @@ import me.mudkip.moememos.data.local.entity.MemoWithResources
 import me.mudkip.moememos.data.local.entity.ResourceEntity
 import me.mudkip.moememos.data.model.Account
 import me.mudkip.moememos.data.model.Memo
+import me.mudkip.moememos.data.model.MemoComment
+import me.mudkip.moememos.data.model.MemoReaction
+import me.mudkip.moememos.data.model.MemoSocialSnapshot
 import me.mudkip.moememos.data.model.MemoVisibility
 import me.mudkip.moememos.data.model.Resource
 import me.mudkip.moememos.data.model.SyncStatus
@@ -416,6 +422,54 @@ class SyncingRepository(
         return ApiResponse.Success(currentUser)
     }
 
+    override suspend fun getMemoSocial(identifier: String): ApiResponse<MemoSocialSnapshot> {
+        val remoteId = interactionRemoteId(identifier)
+            ?: return ApiResponse.Failure.Exception(Exception("Memo has not synced yet"))
+        return coroutineScope {
+            val comments = async { remoteRepository.listMemoComments(remoteId) }
+            val reactions = async { remoteRepository.listMemoReactions(remoteId) }
+            val commentResponse = comments.await()
+            if (commentResponse !is ApiResponse.Success) {
+                return@coroutineScope commentResponse.mapSuccess {
+                    MemoSocialSnapshot(emptyList(), emptyList())
+                }
+            }
+            val reactionResponse = reactions.await()
+            if (reactionResponse !is ApiResponse.Success) {
+                return@coroutineScope reactionResponse.mapSuccess {
+                    MemoSocialSnapshot(emptyList(), emptyList())
+                }
+            }
+            ApiResponse.Success(
+                MemoSocialSnapshot(
+                    comments = commentResponse.data,
+                    reactions = reactionResponse.data,
+                )
+            )
+        }
+    }
+
+    override suspend fun createMemoComment(
+        identifier: String,
+        content: String,
+    ): ApiResponse<MemoComment> {
+        val remoteId = interactionRemoteId(identifier)
+            ?: return ApiResponse.Failure.Exception(Exception("Memo has not synced yet"))
+        return remoteRepository.createMemoComment(remoteId, content)
+    }
+
+    override suspend fun toggleMemoReaction(
+        identifier: String,
+        reactionType: String,
+    ): ApiResponse<List<MemoReaction>> {
+        val remoteId = interactionRemoteId(identifier)
+            ?: return ApiResponse.Failure.Exception(Exception("Memo has not synced yet"))
+        return remoteRepository.toggleMemoReaction(remoteId, reactionType)
+    }
+
+    private suspend fun interactionRemoteId(identifier: String): String? =
+        memoDao.getMemoById(identifier, accountKey)?.remoteId
+
     override suspend fun sync(): ApiResponse<Unit> {
         return operationMutex.withLock {
             setSyncing(true)
@@ -646,7 +700,8 @@ class SyncingRepository(
                 visibility = local.visibility,
                 resourceRemoteIds = remoteResourceIds,
                 tags = null,
-                createdAt = local.date
+                createdAt = local.date,
+                memoId = stableMemosObjectId(local.identifier),
             )
             if (created !is ApiResponse.Success) {
                 return false
@@ -775,7 +830,8 @@ class SyncingRepository(
             type = resource.mimeType?.toMediaTypeOrNull(),
             contentLength = file.length(),
             openInputStream = { file.inputStream() },
-            memoRemoteId = memoRemoteId
+            memoRemoteId = memoRemoteId,
+            resourceId = stableMemosObjectId(resource.identifier),
         )
 
         val remoteResource = uploaded.getOrNull() ?: return null

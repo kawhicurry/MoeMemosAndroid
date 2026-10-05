@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -20,6 +21,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -35,11 +37,26 @@ fun ExploreList(
     viewModel: ExploreViewModel = hiltViewModel(),
     contentPadding: PaddingValues,
 ) {
-    ExploreListContent(viewModel.exploreMemos.collectAsLazyPagingItems(), contentPadding)
+    val socialEnabled by viewModel.socialEnabled.collectAsStateWithLifecycle()
+    ExploreListContent(
+        memos = viewModel.exploreMemos.collectAsLazyPagingItems(),
+        contentPadding = contentPadding,
+        socialEnabled = socialEnabled,
+        onLoadSocial = viewModel::getMemoSocial,
+        onComment = viewModel::createMemoComment,
+        onToggleReaction = viewModel::toggleMemoReaction,
+    )
 }
 
 @Composable
-internal fun ExploreListContent(memos: LazyPagingItems<Memo>, contentPadding: PaddingValues) {
+internal fun ExploreListContent(
+    memos: LazyPagingItems<Memo>,
+    contentPadding: PaddingValues,
+    socialEnabled: Boolean = false,
+    onLoadSocial: (suspend (String) -> com.skydoves.sandwich.ApiResponse<me.mudkip.moememos.data.model.MemoSocialSnapshot>)? = null,
+    onComment: (suspend (String, String) -> com.skydoves.sandwich.ApiResponse<me.mudkip.moememos.data.model.MemoComment>)? = null,
+    onToggleReaction: (suspend (String, String) -> com.skydoves.sandwich.ApiResponse<List<me.mudkip.moememos.data.model.MemoReaction>>)? = null,
+) {
     LazyColumn(
         modifier = Modifier.consumeWindowInsets(contentPadding),
         contentPadding = edgeToEdgeContentPadding(contentPadding),
@@ -62,7 +79,15 @@ internal fun ExploreListContent(memos: LazyPagingItems<Memo>, contentPadding: Pa
             key = memos.itemKey { "memo:${it.remoteId}" },
             contentType = { "memo" },
         ) { index ->
-            memos[index]?.let { ExploreMemoCard(it) }
+            memos[index]?.let {
+                ExploreMemoCard(
+                    memo = it,
+                    socialEnabled = socialEnabled,
+                    onLoadSocial = onLoadSocial,
+                    onComment = onComment,
+                    onToggleReaction = onToggleReaction,
+                )
+            }
         }
         item(key = "append") {
             PagingStatus(memos.loadState.append, memos::retry)

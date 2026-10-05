@@ -27,6 +27,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -57,6 +58,7 @@ fun MemosList(
     onRefresh: (suspend () -> Unit)? = null,
     onTagClick: ((String) -> Unit)? = null,
     onMemoClick: ((String) -> Unit)? = null,
+    headerContent: (@Composable () -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val navController = LocalRootNavController.current
@@ -131,16 +133,31 @@ fun MemosList(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .consumeWindowInsets(contentPadding),
+                .consumeWindowInsets(contentPadding)
+                .testTag("space_timeline"),
             state = lazyListState,
             contentPadding = listContentPadding
         ) {
-            if (filteredMemos.isEmpty()) {
-                item(key = "empty") {
-                    Text(stringResource(R.string.no_memos), modifier = Modifier.padding(24.dp))
+            if (headerContent != null) {
+                item(key = "space-profile", contentType = "space-profile") {
+                    headerContent()
                 }
             }
-            items(filteredMemos, key = { it.identifier }) { memo ->
+            if (filteredMemos.isEmpty()) {
+                item(key = "empty") {
+                    Text(
+                        stringResource(R.string.no_memos),
+                        modifier = Modifier
+                            .padding(24.dp)
+                            .testTag("space_timeline_empty"),
+                    )
+                }
+            }
+            items(
+                items = filteredMemos,
+                key = { it.identifier },
+                contentType = { "space-memo" },
+            ) { memo ->
                 MemosCard(
                     memo = memo,
                     onClick = { selectedMemo ->

@@ -61,6 +61,7 @@ fun Navigation() {
         }
     }
     var shareContent by remember { mutableStateOf<ShareContent?>(null) }
+    var quickCaptureMode by remember { mutableStateOf<String?>(null) }
 
     CompositionLocalProvider(LocalRootNavController provides navController) {
         MoeMemosTheme {
@@ -85,7 +86,10 @@ fun Navigation() {
                 }
 
                 composable(RouteName.INPUT) {
-                    MemoInputPage()
+                    MemoInputPage(
+                        quickCaptureMode = quickCaptureMode,
+                        onQuickCaptureConsumed = { quickCaptureMode = null }
+                    )
                 }
 
                 composable(RouteName.SHARE) {
@@ -143,6 +147,12 @@ fun Navigation() {
         userStateViewModel.loadCurrentUser()
     }
 
+    fun navigateToQuickInput() {
+        navController.navigate(RouteName.INPUT) {
+            launchSingleTop = true
+        }
+    }
+
     suspend fun handleIntent(intent: Intent) {
         when(intent.action) {
             Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE -> {
@@ -151,12 +161,23 @@ fun Navigation() {
             }
             Intent.ACTION_VIEW -> {
                 when (intent.getStringExtra("action")) {
-                    "compose" -> navController.navigate(RouteName.INPUT)
+                    "compose" -> navigateToQuickInput()
                     "search" -> navController.navigate(RouteName.SEARCH)
+                    MainActivity.CAPTURE_MODE_VOICE,
+                    MainActivity.CAPTURE_MODE_CAMERA,
+                    MainActivity.CAPTURE_MODE_MEDIA -> {
+                        quickCaptureMode = intent.getStringExtra("action")
+                        navigateToQuickInput()
+                    }
                 }
             }
             MainActivity.ACTION_NEW_MEMO -> {
-                navController.navigate(RouteName.INPUT)
+                navigateToQuickInput()
+            }
+            MainActivity.ACTION_QUICK_CAPTURE -> {
+                quickCaptureMode = intent.getStringExtra(MainActivity.EXTRA_CAPTURE_MODE)
+                    ?: MainActivity.CAPTURE_MODE_TEXT
+                navigateToQuickInput()
             }
             MainActivity.ACTION_EDIT_MEMO -> {
                 val memoId = intent.getStringExtra(MainActivity.EXTRA_MEMO_ID)

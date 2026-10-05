@@ -9,10 +9,12 @@ import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import me.mudkip.moememos.R
@@ -22,13 +24,15 @@ import me.mudkip.moememos.ext.string
 fun SyncStatusBadge(
     syncing: Boolean,
     unsyncedCount: Int,
-    onSync: () -> Unit
+    onSync: () -> Unit,
+    contentColor: Color = LocalContentColor.current,
 ) {
     val indicatorSize: Dp = 20.dp
 
     if (syncing) {
         CircularProgressIndicator(
             modifier = Modifier.size(indicatorSize),
+            color = contentColor,
             strokeWidth = 2.dp
         )
         return
@@ -53,7 +57,8 @@ fun SyncStatusBadge(
             } else {
                 Icon(
                     Icons.Outlined.Sync,
-                    contentDescription = R.string.sync_status_sync_now.string
+                    contentDescription = R.string.sync_status_sync_now.string,
+                    tint = contentColor,
                 )
             }
         }

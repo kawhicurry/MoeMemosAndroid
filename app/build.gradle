@@ -30,11 +30,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "me.mudkip.moememos"
+        applicationId = "online.kawhicurry.moememos"
         minSdk = 26
         targetSdk = 37
-        versionCode = 50
-        versionName = "2.0.5"
+        versionCode = 51
+        versionName = "2.1.0-beta.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -54,6 +54,12 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Keep development builds installable beside the signed store app so
+            // UI testing never replaces a user's existing Moe Memos data.
+            applicationIdSuffix = ".spacepreview"
+            versionNameSuffix = "-space-dev"
+        }
         release {
             minifyEnabled = true
             shrinkResources = true

@@ -67,7 +67,8 @@ class MemosV0Repository (
         visibility: MemoVisibility,
         resourceRemoteIds: List<String>,
         tags: List<String>?,
-        createdAt: Instant?
+        createdAt: Instant?,
+        memoId: String?,
     ): ApiResponse<Memo> {
         val result = memosApi.createMemo(
             MemosV0CreateMemoInput(
@@ -146,7 +147,8 @@ class MemosV0Repository (
         type: MediaType?,
         contentLength: Long?,
         openInputStream: () -> java.io.InputStream,
-        memoRemoteId: String?
+        memoRemoteId: String?,
+        resourceId: String?,
     ): ApiResponse<Resource> {
         val file = MultipartBody.Part.createFormData(
             "file",

@@ -31,7 +31,13 @@ class MainActivity : FragmentActivity() {
         const val ACTION_NEW_MEMO = "me.mudkip.moememos.action.NEW_MEMO"
         const val ACTION_EDIT_MEMO = "me.mudkip.moememos.action.EDIT_MEMO"
         const val ACTION_VIEW_MEMO = "me.mudkip.moememos.action.VIEW_MEMO"
+        const val ACTION_QUICK_CAPTURE = "me.mudkip.moememos.action.QUICK_CAPTURE"
         const val EXTRA_MEMO_ID = "memoId"
+        const val EXTRA_CAPTURE_MODE = "captureMode"
+        const val CAPTURE_MODE_TEXT = "text"
+        const val CAPTURE_MODE_VOICE = "voice"
+        const val CAPTURE_MODE_CAMERA = "camera"
+        const val CAPTURE_MODE_MEDIA = "media"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
