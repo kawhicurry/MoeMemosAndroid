@@ -1,4 +1,4 @@
-# Moe Memos 2.1.0-beta.2 feature and verification matrix
+# Moe Memos 2.1.0-beta.3 feature and verification matrix
 
 This document records the behavior accepted for the KawhiCurry release candidate
 on 2026-10-05. It is a verification snapshot, not a list of planned work.
@@ -9,7 +9,7 @@ on 2026-10-05. It is a verification snapshot, not a list of planned work.
 - Debug application ID: `online.kawhicurry.moememos.spacepreview`.
 - Kotlin/Android namespace: `me.mudkip.moememos` (kept unchanged so existing
   source packages and component class names remain valid).
-- Version: `2.1.0-beta.2` (`versionCode` 52).
+- Version: `2.1.0-beta.3` (`versionCode` 53).
 - The dedicated application ID and signing key keep this fork isolated from the
   upstream Play/F-Droid package.
 
@@ -36,16 +36,23 @@ on 2026-10-05. It is a verification snapshot, not a list of planned work.
 | Voice attachment | The editor records AAC/M4A, finalizes recording on lifecycle stop or duration limit, blocks submission while recording, and supports local/remote playback. |
 | Social interaction | Own-timeline and Explore cards load Memos comments and reactions. Expanded state reloads details exactly once after state restoration. |
 | QQ-Space-style home | Responsive cover/profile/stat header, four quick actions, rich cards and light/dark layouts were exercised on phone width. |
-| Quick-capture widget | Text, voice, camera and media actions were exercised from a real Pixel launcher widget. The widget survived an app upgrade and routed back to a single editor instance. |
+| Quick-capture widget | The title and four text, voice, camera and media actions are vertically centered using the exact launcher height. A compact layout below 116 dp preserves every icon and label at the minimum supported height; the regular layout keeps the larger 4x2 surface visually balanced. The four explicit capture-mode intents remain unchanged. |
 | Static shortcuts | Release and debug resources target their own application IDs for compose, search, voice, camera and media. |
 | Sharing | Android inbound text and mixed-media sharing reaches the editor. Memo-card outbound sharing currently exports text, not embedded attachment bytes. |
 
 ## Verification evidence
 
-- JVM suite: 52 tests passed, including 10 speech routing/result/error tests.
+- JVM suite: 56 tests passed, including 10 speech routing/result/error tests and
+  four responsive widget-layout tests.
 - Pixel instrumentation suite: 19 tests passed (13 UI component tests, three
   social-section tests, one application-context test, one speech UI test and
   one real configured-`RecognitionService` smoke test).
+- Pixel Launcher widget verification covered a 4x2 surface (980x531 px) with
+  balanced top/bottom whitespace, plus its minimum host height (980x251 px,
+  about 95.6 dp); all four icons and labels remained visible without clipping.
+  The host exposed four distinct `PendingIntent` entries for the text, voice,
+  camera and media modes, and a safe text click opened an empty editor without
+  submitting content.
 - Debug, instrumentation-test and minified Release APK builds passed.
 - `lintDebug` completed with zero errors for the accepted tree.
 - Production canaries, their reactions/comments and uploaded attachments were
